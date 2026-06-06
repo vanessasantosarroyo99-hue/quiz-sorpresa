@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Quiz Sorpresa 🎁</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Nunito',sans-serif;background:#f8f4f0;min-height:100vh;padding-bottom:40px}
+  #app{padding:16px;max-width:500px;margin:0 auto}
+  .header{text-align:center;padding:24px 0 12px}
+  .header h1{font-family:'Fredoka One',cursive;font-size:2.2rem;color:#1a1a2e;letter-spacing:1px}
+  .header p{font-size:0.8rem;color:#666;margin-top:6px;line-height:1.5}
+  .progress-wrap{margin:12px 0 18px}
+  .progress-label{font-size:0.78rem;color:#666;margin-bottom:5px;display:flex;justify-content:space-between}
+  .progress-bar{height:10px;background:#e0d8d0;border-radius:99px;overflow:hidden}
+  .progress-fill{height:100%;background:#E24B4A;border-radius:99px;transition:width 0.5s ease}
+  .card{background:#fff;border:1px solid #e8e0d8;border-radius:16px;padding:22px;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
+  .q-num{font-size:0.73rem;color:#999;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px}
+  .q-text{font-size:1.08rem;font-weight:700;color:#1a1a2e;line-height:1.55;margin-bottom:8px;white-space:pre-line}
+  .q-hint{font-size:0.8rem;color:#888;margin-bottom:18px;font-style:italic}
+  .options-list{margin-bottom:18px;display:flex;flex-direction:column;gap:8px}
+  .option-item{padding:10px 14px;border-radius:10px;border:1.5px solid #d0c8c0;font-size:0.95rem;color:#1a1a2e;background:#faf7f4;line-height:1.4}
+  .option-item strong{color:#E24B4A}
+  .answer-box{width:100%;padding:12px 16px;font-size:1rem;font-family:'Nunito',sans-serif;border:1.5px solid #d0c8c0;border-radius:10px;background:#fff;color:#1a1a2e;outline:none;transition:border-color 0.2s;-webkit-appearance:none}
+  .answer-box:focus{border-color:#E24B4A}
+  .btn{margin-top:14px;width:100%;padding:14px;font-size:1.05rem;font-family:'Fredoka One',cursive;letter-spacing:1px;background:#E24B4A;color:#fff;border:none;border-radius:10px;cursor:pointer;transition:transform 0.15s,background 0.15s;-webkit-tap-highlight-color:transparent}
+  .btn:active{transform:scale(0.97);background:#c73a39}
+  .feedback{margin-top:14px;padding:14px 16px;border-radius:10px;font-size:0.9rem;font-weight:700;line-height:1.6;display:none}
+  .feedback.ok{background:#eaf3de;border:1px solid #639922;color:#3B6D11}
+  .feedback.err{background:#fcebeb;border:1px solid #E24B4A;color:#a32d2d}
+  .phrase-section{margin-top:20px;padding:18px;background:#fff;border-radius:14px;border:1px solid #e8e0d8}
+  .phrase-label{font-size:0.72rem;color:#999;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px}
+  .phrase-chars{display:flex;flex-wrap:wrap;gap:6px}
+  .char-box{width:28px;height:32px;border-radius:6px;border:1.5px solid #d0c8c0;display:flex;align-items:center;justify-content:center;font-family:'Fredoka One',cursive;font-size:1rem;transition:all 0.3s}
+  .char-box.revealed{background:#E24B4A;color:#fff;border-color:#E24B4A;transform:scale(1.08)}
+  .char-box.hidden{background:#f0ebe5;color:transparent}
+  .char-box.space{background:transparent;border-color:transparent;width:10px}
+  .final-screen{display:none;padding:10px 0}
+  .final-screen .big-emoji{font-size:3rem;text-align:center;display:block;margin:20px 0 10px}
+  .final-screen h2{font-family:'Fredoka One',cursive;font-size:1.9rem;color:#1a1a2e;text-align:center;margin-bottom:8px}
+  .phrase-big{font-family:'Fredoka One',cursive;font-size:1.4rem;color:#E24B4A;text-align:center;margin:14px 0;letter-spacing:2px;line-height:1.5}
+  .final-note{font-size:0.85rem;color:#888;text-align:center;margin-bottom:20px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <h1>Quiz Sorpresa 🎁</h1>
+    <p>Responde en <strong>minúsculas</strong>, sin acentos y sin símbolos especiales.<br>Solo avanzas si respondes correctamente.</p>
+  </div>
+
+  <div id="quiz-body">
+    <div class="progress-wrap">
+      <div class="progress-label"><span id="q-counter">Pregunta 1 de 23</span><span id="q-pct">0%</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    </div>
+    <div class="card">
+      <div class="q-num" id="q-num"></div>
+      <div class="q-text" id="q-text"></div>
+      <div class="q-hint" id="q-hint"></div>
+      <div class="options-list" id="options-list" style="display:none"></div>
+      <input class="answer-box" id="answer-box" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Escribe tu respuesta aquí...">
+      <button class="btn" id="check-btn">Verificar respuesta</button>
+      <div class="feedback" id="feedback"></div>
+    </div>
+    <div class="phrase-section">
+      <div class="phrase-label">Frase descubierta</div>
+      <div class="phrase-chars" id="phrase-chars"></div>
+    </div>
+  </div>
+
+  <div class="final-screen" id="final-screen">
+    <span class="big-emoji">🎉</span>
+    <h2>¡Lo lograste!</h2>
+    <p class="final-note">Completaste todas las preguntas. La frase formada es:</p>
+    <div class="phrase-big">PUEDO HACER ESTO TODO EL DIA</div>
+    <p class="final-note">Ahora la pregunta final...</p>
+    <div class="card" style="margin-top:10px;text-align:left">
+      <div class="q-text" style="margin-bottom:8px">¿Qué personaje famoso dice: "Puedo hacer esto todo el día"?</div>
+      <div class="q-hint">Minúsculas, sin acentos.</div>
+      <input class="answer-box" id="final-answer" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Nombre del personaje...">
+      <button class="btn" id="final-btn">Revelar personaje</button>
+      <div class="feedback" id="final-feedback"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const QUESTIONS = [
+  {
+    pos:24, letter:"P",
+    text:"¿Cómo se llama tu perrito?",
+    answer:"barry",
+    hint:"",
+    options:null
+  },
+  {
+    pos:11, letter:"U",
+    text:"¿Cuál es tu color favorito?",
+    answer:"verde",
+    hint:"",
+    options:null
+  },
+  {
+    pos:21, letter:"E",
+    text:"En Teen Wolf, ¿cómo se llama la ciudad donde ocurre la serie?",
+    answer:"beacon hills",
+    hint:"Son dos palabras.",
+    options:null
+  },
+  {
+    pos:13, letter:"D",
+    text:"En Jujutsu Kaisen, ¿cuál es el apellido de Toji?\n(Toji ___)",
+    answer:"fushiguro",
+    hint:"",
+    options:null
+  },
+  {
+    pos:7, letter:"O",
+    text:"¿Cuántos planetas tiene el sistema solar actualmente?",
+    answer:"8",
+    hint:"",
+    options:null
+  },
+  {
+    pos:12, letter:"H",
+    text:"En los Avengers, ¿cuál es el verdadero nombre completo de Iron Man?",
+    answer:"tony stark",
+    hint:"",
+    options:null
+  },
+  {
+    pos:20, letter:"A",
+    text:"En el universo Marvel, ¿cuál es el nombre del dios asgardiano hermano de Thor, conocido como el Dios del Engaño?",
+    answer:"loki",
+    hint:"",
+    options:null
+  },
+  {
+    pos:16, letter:"C",
+    text:"¿Cuál es tu chocolate favorito?",
+    answer:"reese",
+    hint:"",
+    options:null
+  },
+  {
+    pos:6, letter:"E",
+    text:"Derivada: Si f(x) = x³ · eˣ, ¿cuál es f'(x)?\n(Aplica regla del producto y factoriza)",
+    answer:"x^2·e^x·(x+3)",
+    hint:"Formato exacto: x^2·e^x·(x+3)",
+    options:null
+  },
+  {
+    pos:14, letter:"R",
+    text:"En Jujutsu Kaisen, ¿cómo se llama el maldito especial que habita dentro de Yuji Itadori?",
+    answer:"sukuna",
+    hint:"",
+    options:null
+  },
+  {
+    pos:22, letter:"E",
+    text:"En Teen Wolf, ¿cuál es el nombre completo del mejor amigo de Scott McCall?",
+    answer:"mieczyslaw stilinski",
+    hint:"Nombre completo. Dos palabras.",
+    options:null
+  },
+  {
+    pos:18, letter:"S",
+    text:"¿Cuál es tu segundo nombre?",
+    answer:"eduardo",
+    hint:"",
+    options:null
+  },
+  {
+    pos:5, letter:"T",
+    text:"¿Cuál es el segundo apellido de la persona que hizo este quiz?",
+    answer:"arroyo",
+    hint:"",
+    options:null
+  },
+  {
+    pos:19, letter:"O",
+    text:"Integral: ¿Cuánto es ∫(3x² + 2x) dx?",
+    answer:"x^3 + x^2 + c",
+    hint:"Integra término a término. Formato: x^3 + x^2 + c",
+    options:null
+  },
+  {
+    pos:15, letter:"T",
+    text:"¿Qué es una base de datos?\n\na) Un programa para hacer presentaciones\nb) Un conjunto organizado de datos almacenados para consultarse y manipularse\nc) Un lenguaje de programación para diseño web\nd) Un tipo de red de computadoras",
+    answer:"b",
+    hint:"Escribe solo la letra: a, b, c o d",
+    options:[
+      "a) Un programa para hacer presentaciones",
+      "b) Un conjunto organizado de datos almacenados para consultarse y manipularse",
+      "c) Un lenguaje de programación para diseño web",
+      "d) Un tipo de red de computadoras"
+    ]
+  },
+  {
+    pos:4, letter:"O",
+    text:"En analítica web, ¿qué mide la tasa de rebote (bounce rate)?",
+    answer:"porcentaje de sesiones de una sola pagina",
+    hint:"Formato: porcentaje de sesiones de una sola pagina",
+    options:null
+  },
+  {
+    pos:17, letter:"D",
+    text:"En analítica web, ¿cuál es la diferencia entre una sesión y un usuario?",
+    answer:"la sesion es la visita y el usuario es la persona",
+    hint:"Formato: la sesion es la visita y el usuario es la persona",
+    options:null
+  },
+  {
+    pos:3, letter:"O",
+    text:"¿En qué continente se encuentra Egipto?",
+    answer:"africa",
+    hint:"",
+    options:null
+  },
+  {
+    pos:8, letter:"E",
+    text:"Resuelve el sistema de ecuaciones:\n2x + y = 7\nx − y = 2\n¿Cuánto vale x?",
+    answer:"3",
+    hint:"Solo escribe el número.",
+    options:null
+  },
+  {
+    pos:2, letter:"L",
+    text:"Usando el sistema anterior (x = 3):\n2x + y = 7\n¿Cuánto vale y?",
+    answer:"1",
+    hint:"Solo escribe el número.",
+    options:null
+  },
+  {
+    pos:9, letter:"D",
+    text:"En Avengers: Infinity War, ¿qué piedra del infinito tenía Visión incrustada en la frente?",
+    answer:"mente",
+    hint:"Una sola palabra.",
+    options:null
+  },
+  {
+    pos:10, letter:"I",
+    text:"En analítica web, ¿qué significan las siglas KPI en inglés?",
+    answer:"key performance indicator",
+    hint:"Tres palabras en inglés.",
+    options:null
+  },
+  {
+    pos:23, letter:"A",
+    text:"En Demon Slayer: Kimetsu no Yaiba, ¿cómo se llama la técnica de respiración que usa Tanjiro Kamado como estilo principal?",
+    answer:"respiracion del agua",
+    hint:"Tres palabras. El elemento que usa es fluido y calmante.",
+    options:null
+  },
+];
+
+const PHRASE_STRUCTURE = [
+  {t:'c',l:'P',p:24},{t:'c',l:'U',p:11},{t:'c',l:'E',p:21},{t:'c',l:'D',p:13},{t:'c',l:'O',p:7},{t:'s'},
+  {t:'c',l:'H',p:12},{t:'c',l:'A',p:20},{t:'c',l:'C',p:16},{t:'c',l:'E',p:6},{t:'c',l:'R',p:14},{t:'s'},
+  {t:'c',l:'E',p:22},{t:'c',l:'S',p:18},{t:'c',l:'T',p:5},{t:'c',l:'O',p:19},{t:'s'},
+  {t:'c',l:'T',p:15},{t:'c',l:'O',p:4},{t:'c',l:'D',p:17},{t:'c',l:'O',p:3},{t:'s'},
+  {t:'c',l:'E',p:8},{t:'c',l:'L',p:2},{t:'s'},
+  {t:'c',l:'D',p:9},{t:'c',l:'I',p:10},{t:'c',l:'A',p:23},
+];
+
+let current = 0;
+let unlocked = new Set();
+let answered = false;
+
+function norm(s){
+  return s.trim().toLowerCase()
+    .replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u')
+    .replace(/ü/g,'u').replace(/ñ/g,'n');
+}
+
+function buildPhrase(){
+  const c = document.getElementById('phrase-chars');
+  c.innerHTML = '';
+  PHRASE_STRUCTURE.forEach(item => {
+    const d = document.createElement('div');
+    if(item.t === 's'){
+      d.className = 'char-box space';
+    } else {
+      d.className = 'char-box ' + (unlocked.has(item.p) ? 'revealed' : 'hidden');
+      d.textContent = item.l;
+    }
+    c.appendChild(d);
+  });
+}
+
+function loadQuestion(){
+  if(current >= QUESTIONS.length){
+    document.getElementById('quiz-body').style.display = 'none';
+    document.getElementById('final-screen').style.display = 'block';
+    return;
+  }
+  answered = false;
+  const q = QUESTIONS[current];
+  const pct = Math.round((current / QUESTIONS.length) * 100);
+  document.getElementById('q-counter').textContent = 'Pregunta ' + (current+1) + ' de ' + QUESTIONS.length;
+  document.getElementById('q-pct').textContent = pct + '%';
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('q-num').textContent = 'PREGUNTA ' + (current+1) + ' · 🎁 REGALO #' + q.pos;
+  document.getElementById('q-text').textContent = q.text;
+
+  const hintEl = document.getElementById('q-hint');
+  hintEl.textContent = q.hint;
+  hintEl.style.display = q.hint ? 'block' : 'none';
+
+  const optEl = document.getElementById('options-list');
+  const inputEl = document.getElementById('answer-box');
+  if(q.options){
+    optEl.style.display = 'flex';
+    optEl.innerHTML = q.options.map(o => '<div class="option-item"><strong>' + o[0] + '</strong>' + o.slice(1) + '</div>').join('');
+    inputEl.placeholder = 'Escribe la letra: a, b, c o d';
+  } else {
+    optEl.style.display = 'none';
+    inputEl.placeholder = 'Escribe tu respuesta aquí...';
+  }
+  inputEl.value = '';
+
+  const fb = document.getElementById('feedback');
+  fb.style.display = 'none';
+  fb.className = 'feedback';
+
+  const btn = document.getElementById('check-btn');
+  btn.textContent = 'Verificar respuesta';
+  btn.onclick = checkAnswer;
+
+  buildPhrase();
+  setTimeout(() => inputEl.focus(), 100);
+}
+
+function checkAnswer(){
+  if(answered) return;
+  const q = QUESTIONS[current];
+  const user = norm(document.getElementById('answer-box').value);
+  const correct = norm(q.answer);
+  const fb = document.getElementById('feedback');
+  fb.style.display = 'block';
+
+  if(user === correct){
+    answered = true;
+    unlocked.add(q.pos);
+    buildPhrase();
+    fb.className = 'feedback ok';
+    fb.innerHTML = '✅ ¡Respuesta correcta!<br>🎁 <strong>Abre el regalo #' + q.pos + '</strong><br>Tu letra descubierta es: <span style="font-size:1.6rem;font-family:\'Fredoka One\',cursive">"' + q.letter + '"</span>';
+    const btn = document.getElementById('check-btn');
+    btn.textContent = 'Siguiente pregunta →';
+    btn.onclick = function(){ current++; loadQuestion(); };
+  } else {
+    fb.className = 'feedback err';
+    fb.innerHTML = '❌ ¡Sigue intentando! Esa no es la respuesta.<br><em style="font-size:0.8rem;font-weight:400">Recuerda: minúsculas, sin acentos, sin símbolos.</em>';
+  }
+}
+
+function checkFinal(){
+  const user = norm(document.getElementById('final-answer').value);
+  const fb = document.getElementById('final-feedback');
+  fb.style.display = 'block';
+  if(user === 'capitan america' || user === 'el capitan america' || user === 'captain america'){
+    fb.className = 'feedback ok';
+    fb.innerHTML = '<div style="text-align:center;padding:6px 0"><div style="font-size:2.5rem;margin-bottom:8px">🛡️🎊🎁</div><div style="font-family:\'Fredoka One\',cursive;font-size:1.4rem;color:#3B6D11;margin-bottom:8px">¡¡FELICIDADES!!</div><div style="font-size:0.95rem;color:#3B6D11">¡Correcto! Es el <strong>Capitán América</strong> quien dice<br>"Puedo hacer esto todo el día"<br><br>🎁 <strong>¡Ahora abre el regalo #1! 🎁</strong></div></div>';
+    document.getElementById('final-btn').style.display = 'none';
+  } else {
+    fb.className = 'feedback err';
+    fb.innerHTML = '❌ No es ese personaje... ¡Piénsalo bien!';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  document.getElementById('answer-box').addEventListener('keydown', function(e){
+    if(e.key === 'Enter') document.getElementById('check-btn').click();
+  });
+  document.getElementById('final-answer').addEventListener('keydown', function(e){
+    if(e.key === 'Enter') document.getElementById('final-btn').click();
+  });
+  document.getElementById('final-btn').addEventListener('click', checkFinal);
+  loadQuestion();
+  buildPhrase();
+});
+</script>
+</body>
+</html>
